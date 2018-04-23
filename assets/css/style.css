@@ -15,6 +15,9 @@ footer {
 
 .playerTools .tool {
     width: 60px;
+}
+
+.clickable {
     cursor: pointer;
 }
 

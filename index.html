@@ -38,9 +38,9 @@
                     <input type="text" id="player1NameInput" placeholder="Player 1 Name" required>
                 </form>
                 <div class="playerTools">
-                    <img src="assets/images/rock.jpg" alt="rock" class="tool">
-                    <img src="assets/images/paper.jpg" alt="paper" class="tool">
-                    <img src="assets/images/scissors.jpg" alt="scissors" class="tool">
+                    <img src="assets/images/rock.jpg" data-play="rock" alt="rock" class="tool clickable">
+                    <img src="assets/images/paper.jpg" data-play="paper" alt="paper" class="tool clickable">
+                    <img src="assets/images/scissors.jpg" data-play="scissors" alt="scissors" class="tool clickable">
                 </div>
                 <h4>
                     Wins:
@@ -50,14 +50,14 @@
                 </h4>
             </div>
             <div class="col-12 col-md-4 ">
-                <h3 id="gameResults">Results</h3>
+                <h3 id="gameResults"></h3>
             </div>
             <div class="col-12 col-md-4 player">
                 <h3 id="player2Name">Player 2</h3>
-                <div class="playerTools">
-                    <img src="assets/images/rock.jpg" alt="rock" class="tool">
-                    <img src="assets/images/paper.jpg" alt="paper" class="tool">
-                    <img src="assets/images/scissors.jpg" alt="scissors" class="tool">
+                <div class="playerTools player2">
+                    <img id= "p2rock" src="assets/images/rock.jpg" alt="rock" class="tool">
+                    <img id= "p2paper" src="assets/images/paper.jpg" alt="paper" class="tool">
+                    <img id= "p2scissor" src="assets/images/scissors.jpg" alt="scissors" class="tool">
                 </div>
                 <h4>
                     Wins:
