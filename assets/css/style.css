@@ -13,7 +13,7 @@ footer {
     flex-shrink: 0;
 }
 
-.playerTools .tool {
+.tool {
     width: 60px;
 }
 
@@ -21,7 +21,7 @@ footer {
     cursor: pointer;
 }
 
-.playerTools {
+.remotePlayerTools, .localPlayerTools {
     text-align:center;
 }
 

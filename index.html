@@ -31,39 +31,39 @@
         </div>
         <div class="row">
             <div class="col-12 col-md-4 player">
-                <h3 id="player1Name"></h3>
+                <h3 id="localPlayerName"></h3>
                 <form id="nameSelection">
-                    <label for="player1NameInput">Name</label>
+                    <label for="localPlayerNameInput">Name</label>
                     <button type="submit" class="btn btn-primary">Play!</button>
-                    <input type="text" id="player1NameInput" placeholder="Player 1 Name" required>
+                    <input type="text" id="localPlayerNameInput" placeholder="Your Name" required>
                 </form>
-                <div class="playerTools">
-                    <img src="assets/images/rock.jpg" data-play="rock" alt="rock" class="tool clickable">
-                    <img src="assets/images/paper.jpg" data-play="paper" alt="paper" class="tool clickable">
-                    <img src="assets/images/scissors.jpg" data-play="scissors" alt="scissors" class="tool clickable">
+                <div class="localPlayerTools">
+                    <img src="assets/images/rock.jpg" id="rock" alt="rock" class="tool clickable">
+                    <img src="assets/images/paper.jpg" id="paper" alt="paper" class="tool clickable">
+                    <img src="assets/images/scissors.jpg" id="scissors" alt="scissors" class="tool clickable">
                 </div>
                 <h4>
                     Wins:
-                    <span id="player1Wins">0</span>
+                    <span id="localPlayerWins">0</span>
                     Losses:
-                    <span id="player1Losses">0</span>
+                    <span id="localPlayerLosses">0</span>
                 </h4>
             </div>
             <div class="col-12 col-md-4 ">
                 <h3 id="gameResults"></h3>
             </div>
             <div class="col-12 col-md-4 player">
-                <h3 id="player2Name">Player 2</h3>
-                <div class="playerTools player2">
-                    <img id= "p2rock" src="assets/images/rock.jpg" alt="rock" class="tool">
-                    <img id= "p2paper" src="assets/images/paper.jpg" alt="paper" class="tool">
-                    <img id= "p2scissor" src="assets/images/scissors.jpg" alt="scissors" class="tool">
+                <h3 id="remotePlayerName">Player 2</h3>
+                <div class="remotePlayerTools ">
+                    <img id= "remote-rock" src="assets/images/rock.jpg" alt="rock" class="tool">
+                    <img id= "remote-paper" src="assets/images/paper.jpg" alt="paper" class="tool">
+                    <img id= "remote-scissors" src="assets/images/scissors.jpg" alt="scissors" class="tool">
                 </div>
                 <h4>
                     Wins:
-                    <span id="player2Wins">0</span>
+                    <span id="remotePlayerWins">0</span>
                     Losses:
-                    <span id="player2Losses">0</span>
+                    <span id="remotePlayerLosses">0</span>
                 </h4>
             </div>
         </div>
@@ -90,7 +90,7 @@
         crossorigin="anonymous"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.0/js/bootstrap.min.js" integrity="sha384-uefMccjFJAIv6A+rW+L4AHf99KvxDjWSu1z9VI8SKNVmz4sk7buKt/6v9KI65qnm"
         crossorigin="anonymous"></script>
-    <script src="assets/scripts/app.js"></script>
+    <script src="assets/scripts/appV2.js"></script>
 
 </body>
 

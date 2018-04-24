@@ -16,13 +16,48 @@ $(document).ready(function () {
     let database = firebase.database();
 
     function RPSGame() {
-        let gameSessionKey = null;
-        let amIPlayer1 = null;
+        this.gameSessionKey = null;
+        this.playerName = null;
+        this.amIPlayer1 = null;
+        this.opponentName = null;
+        this.statusElement = $("#gameMessages");
+        this.localPlayerToolsElements = $(".clickable");
     }
-    let game = new RPSGame();
 
-    RPSGame.prototype.goToState1GetAGameSession = function (playerName) {
-        // check if a game session has already been created that we can join
+
+    RPSGame.prototype.setGameMessage = function (message) {
+        this.statusElement.text(message);
+    };
+
+
+    // create an even handler that listens for form submittal to get player name
+    RPSGame.prototype.state1GetPlayerName = function () {
+        console.log("state1GetPlayerName: listening for player name");
+        this.setGameMessage("Please enter your name.");
+
+        let form = $("#nameSelection");
+        let self = this;
+        form.on("submit", function (event) {
+            event.preventDefault();
+            // validates the input from the user's name
+            if (form[0].checkValidity() === false) {
+                event.stopPropagation();
+                form[0].classList.add('was-validated');
+            }
+            else { // form input is valid
+                form.hide();
+                form.off();
+                self.playerName = $("#localPlayerNameInput").val().trim();
+                $("#localPlayerName").text(self.playerName);
+                self.goToState2GetAGameSession();
+            }
+        });
+    };
+
+    RPSGame.prototype.goToState2GetAGameSession = function () {
+        console.log("goToState2GetAGameSession: check if a game session has already been created that we can join");
+        this.setGameMessage("Setting up the game.");
+
         let self = this;
         database.ref(databaseGamePath).once('value').then(function (snapshot) {
             let sv = snapshot.val();
@@ -34,134 +69,136 @@ $(document).ready(function () {
                 if (!sv[key].claimed && sv[key].player1Name) {
                     foundGameSession = true;
                     self.gameSessionKey = key;
+                    self.amIPlayer1 = false;
+                    self.opponentName = sv[key].player1Name;
+                    $("#remotePlayerName").text(self.opponentName);
+                    // update game session with this local player's name so remote gets it
                     database.ref(databaseGamePath).child(self.gameSessionKey).update({
                         claimed: true,
-                        player2Name: playerName
+                        player2Name: self.playerName
                     });
-                    $("#player2Name").text(sv[key].player1Name);
+
+                    self.goToState4MakeAMove();
                     break;
                 }
             }
-            if (!foundGameSession) {
-                // create a new game session
-                
+            if (!foundGameSession) {  // create a new game session
                 self.amIPlayer1 = true;
+                // get and store the game session key for easy accessibility
                 self.gameSessionKey = database.ref(databaseGamePath).push().key;
                 database.ref(databaseGamePath).child(self.gameSessionKey).update({
                     key: self.gameSessionKey,
                     claimed: false,
-                    player1Name: playerName,
+                    player1Name: self.playerName,
                     player2Name: "",
                     player1Wins: 0,
                     player1Losses: 0,
+                    player2Wins: 0,
+                    player2Losses: 0,
                     player1Play: "",
                     player2Play: ""
                 });
-                game.goToState2WaitForNewOpponent();
-            }
-            else {
-                self.amIPlayer1 = false;
-                game.goToState3MakeAMove();
+                self.goToState3WaitForNewOpponent();
             }
         });
     };
 
-    RPSGame.prototype.goToState2WaitForNewOpponent = function () {
-        $("#gameResults").text("Waiting for an opponent to join...");
+    RPSGame.prototype.goToState3WaitForNewOpponent = function () {
+        console.log("goToState3WaitForNewOpponent: I am player 1, need player 2.");
+        this.setGameMessage("Waiting for an opponent to join...");
 
         let self = this;
         database.ref(databaseGamePath /*+ "/" + this.gameSessionKey*/).on("child_changed", function (snapshot) {
-            
+
             let sv = snapshot.val();
             if (sv.key == self.gameSessionKey) {
-
-                $("#player2Name").text(sv.player2Name);
-                self.goToState3MakeAMove();
+                self.opponentName = sv.player2Name;
+                $("#remotePlayerName").text(self.opponentName);
+                self.goToState4MakeAMove();
                 database.ref(databaseGamePath).off();
             }
         });
     };
 
-    RPSGame.prototype.goToState3MakeAMove = function () {
+    RPSGame.prototype.goToState4MakeAMove = function () {
+        console.log("goToState4MakeAMove: Make your move!");
+        this.setGameMessage("Choose Rock, Paper, Scissors!");
 
         let self = this;
-        $("#gameResults").text("Choose Rock, Paper, Scissors!");
-        $(".playerTools").on("click", "img", function () {
-            $(".playerTools").off();
-            $(".clickable").hide();
+        this.localPlayerToolsElements.on("click", function () {
+            self.localPlayerToolsElements.off().hide();
             $(this).show();
 
             console.log("You played " + $(this).attr("data-play"));
 
             let playMade = null;
             if (self.amIPlayer1) {
-                playMade = {player1Play: $(this).attr("data-play")};
+                playMade = { player1Play: $(this).attr("data-play") };
             }
             else {
-                playMade = {player2Play: $(this).attr("data-play")};
+                playMade = { player2Play: $(this).attr("data-play") };
             }
             database.ref(databaseGamePath).child(self.gameSessionKey).update(playMade);
 
-            self.goToState4WaitForPlay();
+            self.goToState5WaitForPlay();
         });
     };
 
-    RPSGame.prototype.goToState4WaitForPlay = function () {
-        $("#gameResults").text("Waiting for Your Opponent...");
+    RPSGame.prototype.goToState5WaitForPlay = function () {
+        console.log("goToState5WaitForPlay: Using an interval timer to check over and over if both have chosen.");
+        this.setGameMessage(`Waiting for ${this.opponentName} choose.`);
 
         let self = this;
-        let intervalID = setInterval(function(){ 
-            database.ref(databaseGamePath +"/"+self.gameSessionKey).once('value').then(function(snapshot) {
+        let intervalID = setInterval(function () {
+            // get a snapshot of the game session and check if both players' choices have been made.
+            database.ref(databaseGamePath + "/" + self.gameSessionKey).once('value').then(function (snapshot) {
                 let sv = snapshot.val();
 
-                if (sv.player1Play !="" && sv.player2Play !="" ) {
+                if (sv.player1Play != "" && sv.player2Play != "") {
                     clearInterval(intervalID);
-                    console.log(sv.player1Play +" vs "+sv.player2Play);
+                    console.log(sv.player1Play + " vs " + sv.player2Play);
 
-                    $(".player2 img").hide();
-                    $("#p2"+sv.player2Play).show();
-
-                    if (sv.player1Play == sv.player2Play) {
-                        self.goToState5HandleResult("Tie");
+                    $(".remotePlayerTools img").hide();
+                    if (self.amIPlayer1) {
+                        $("#remote-" + sv.player2Play).show();
                     }
                     else {
+                        $("#remote-" + sv.player1Play).show();
+                    }
+
+                    if (sv.player1Play == sv.player2Play) {
+                        self.setGameMessage(`It is a TIE!`);
+                        // go to a new game - no update needed?
+                    }
+                    else { // someone won.  who?
                         let didPlayer1Win = false;
-                        if (sv.player1Play == "rock" && sv.player2Play == "scissors" || sv.player1Play == "paper" && sv.player2Play == "rock" ||sv.player1Play == "scissors" && sv.player2Play == "paper") {
+                        if (sv.player1Play == "rock" && sv.player2Play == "scissors" ||
+                            sv.player1Play == "paper" && sv.player2Play == "rock" ||
+                            sv.player1Play == "scissors" && sv.player2Play == "paper") {
                             didPlayer1Win = true;
                         }
-                        if (self.amIPlayer1) {
-                            self.goToState5HandleResult(didPlayer1Win ? "Win" : "Loss");
+
+                        if (self.amIPlayer1 && didPlayer1Win || !self.amIPlayer1 && !didPlayer1Win) {
+                            self.setGameMessage(`You WIN!`);
                         }
                         else {
-                            self.goToState5HandleResult(didPlayer1Win ? "Loss" : "Win");}
+                            self.setGameMessage(`You LOSE!`);
+                        }
+
+                        /*
+                                                database.ref(databaseGamePath).child(self.gameSessionKey).update({
+                                                    claimed: true,
+                                                    player2Name: self.playerName
+                                                });
+                        */
+
                     }
                 }
             });
-         }, 250);
+        }, 250);
     };
 
-    RPSGame.prototype.goToState5HandleResult = function (result) {
-        $("#gameResults").text(result);
-
-    };
-
-
-    // create an even handler that listens for form submittal
-    // and validates the input from the user's name
-    let form = $("#nameSelection");
-    form.on("submit", function (event) {
-
-        event.preventDefault();
-        if (form[0].checkValidity() === false) {
-            event.stopPropagation();
-            form[0].classList.add('was-validated');
-        }
-        else {
-            form.hide();
-            let playerName = $("#player1NameInput").val().trim();
-            $("#player1Name").text(playerName);
-            game.goToState1GetAGameSession(playerName);
-        }
-    });
+    let game = new RPSGame();
+    game.state1GetPlayerName();
 
 });
