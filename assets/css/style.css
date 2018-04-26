@@ -38,12 +38,6 @@ form {
     text-align: center;
 }
 
-textarea {
-    width:75%;
-    height: 5em;
-    margin: 1em auto 0 auto;
-}
-
 input {
     width:50%;
 }
@@ -70,4 +64,25 @@ footer {
 #nameSelection button {
     float:right;
     margin: 0 0 .25em 0;
+}
+
+#chatDisplay {
+    width:75%;
+    height: 5em;
+    margin: 1em auto .5em auto;
+    overflow: scroll;
+    border: 1px solid black;
+    border-radius: 5px;
+}
+
+.localChatMessage {
+    text-align: left;
+    color: blue;
+    margin: .1em 0 0 2em;
+}
+
+.remoteChatMessage {
+    text-align: left;
+    color: black;
+    margin: .1em 0 .1em 0;
 }

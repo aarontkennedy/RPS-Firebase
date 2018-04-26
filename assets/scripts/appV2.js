@@ -24,7 +24,7 @@ $(document).ready(function () {
         this.playMade = null;
 
         this.statusElement = $("#gameMessages");
-        this.localPlayerToolsElements = $(".clickable");
+        this.localPlayerToolsElements = $(".localPlayerTools img");
     }
 
 
@@ -50,17 +50,17 @@ $(document).ready(function () {
         database.ref("players").child(this.playerKey).update({ losses: this.losses });
     };
 
+    RPSGame.prototype.resetPlayMade = function () {
+        this.playMade = "";
+        this.localPlayerToolsElements.show();
+        this.localPlayerToolsElements.addClass("clickable");
+    };
+
     RPSGame.prototype.setPlayMade = function (play) {
         this.playMade = play;
         this.localPlayerToolsElements.hide();
-        if (this.playMade == "") { // clearing playMade for a new game
-            this.localPlayerToolsElements.show();
-            this.localPlayerToolsElements.addClass("clickable");
-        }
-        else {
-            this.localPlayerToolsElements.removeClass("clickable");
-            $("#" + this.playMade).show();
-        }
+        this.localPlayerToolsElements.removeClass("clickable");
+        $("#" + this.playMade).show();
         database.ref("players").child(this.playerKey).update({ playMade: this.playMade });
     };
 
@@ -132,10 +132,12 @@ $(document).ready(function () {
         this.setGameMessage("Waiting for an opponent...");
 
         let self = this;
-        database.ref("players/" + this.playerKey).on("value", function (snapshot) {
+        let databaseRef = "players/" + this.playerKey;
+        database.ref(databaseRef).on("value", function (snapshot) {
             let sv = snapshot.val(); // is this "on" set up correctly to only listen to my one object?
             if (self.opponentKey != "" && sv.opponentKey != "") { // we have an opponent
-                database.ref().off(); // stop listening to ourselves, we will listen to the opponent
+                console.log("How many times is this called?");
+                database.ref(databaseRef).off(); // stop listening to ourselves, we will listen to the opponent
                 // update game session with this local player's name so remote gets it
                 self.setOpponent(sv.opponentKey, sv.opponentName);
                 self.goToState3RevealOpponent();
@@ -154,7 +156,9 @@ $(document).ready(function () {
     };
 
     RPSGame.prototype.goToState4MakeAMove = function () {
-        this.setGameMessage("Get ready to choose: Rock, Paper, or Scissors!");
+        this.setGameMessage("Get ready to choose!");
+
+        this.resetPlayMade();
         let self = this;
         setTimeout(function () {
             self.setGameMessage("ROCK!");
@@ -176,81 +180,47 @@ $(document).ready(function () {
         }, 4000);
     };
 
+    RPSGame.prototype.updateRemotePlayerWinsLosses = function () {
+        let databaseRef = "players/" + this.opponentKey;
+        database.ref(databaseRef).once('value').then(function (snapshot) {
+            let sv = snapshot.val();
+            $("#remotePlayerWins").text(sv.wins);
+            $("#remotePlayerLosses").text(sv.losses);
+        });
+    };
+
     RPSGame.prototype.goToState5WaitForPlay = function () {
         this.setGameMessage("Waiting for opponent...");
 
         let self = this;
-        database.ref("players/" + this.opponentKey).on('value', function (snapshot) {
+        let databaseRef = "players/" + this.opponentKey;
+        database.ref(databaseRef).on('value', function (snapshot) {
             let sv = snapshot.val();
             if (sv.playMade != "") {
-                database.ref().off(); 
+                database.ref(databaseRef).off();
+                // acknowledge receipt of move by resetting it
+                database.ref("players").child(self.opponentKey).update({ playMade: "" });
                 if (self.playMade == sv.playMade) {
-                    self.setGameMessage("Opponent played "+sv.playMade+". TIE!");
-                    alert("it is a tie");
+                    self.setGameMessage("Opponent played " + sv.playMade + ". TIE!");
                 }
                 else if (self.playMade == "rock" && sv.playMade == "scissors" ||
-                self.playMade == "paper" && sv.playMade == "rock" ||
-                self.playMade == "scissors" && sv.playMade == "paper") {
-                    self.setGameMessage("Opponent played "+sv.playMade+". You win!");
-                    alert("it is a win");
+                    self.playMade == "paper" && sv.playMade == "rock" ||
+                    self.playMade == "scissors" && sv.playMade == "paper") {
+                    self.setGameMessage("Opponent played " + sv.playMade + ". You win!");
+                    self.incrementWins();
                 }
                 else {
-                    self.setGameMessage("Opponent played "+sv.playMade+". You lose!");
-                    alert("it is a loss");
+                    self.setGameMessage("Opponent played " + sv.playMade + ". You lose!");
+                    self.incrementLosses();
                 }
+                setTimeout(function () {
+                    self.updateRemotePlayerWinsLosses();
+                    self.goToState4MakeAMove();
+                }, 2000);
             }
         });
     };
-    /*
-    
-    RPSGame.prototype.goToState5WaitForPlay = function () {
-        console.log("goToState5WaitForPlay: Using an interval timer to check over and over if both have chosen.");
-        this.setGameMessage(`Waiting for ${this.opponentName} choose.`);
-    
-        let self = this;
-        let intervalID = setInterval(function () {
-            // get a snapshot of the game session and check if both players' choices have been made.
-            database.ref(databaseGamePath + "/" + self.gameSessionKey).once('value').then(function (snapshot) {
-                let sv = snapshot.val();
-    
-                if (sv.player1Play != "" && sv.player2Play != "") {
-                    clearInterval(intervalID);
-                    console.log(sv.player1Play + " vs " + sv.player2Play);
-    
-                    $(".remotePlayerTools img").hide();
-                    if (self.amIPlayer1) {
-                        $("#remote-" + sv.player2Play).show();
-                    }
-                    else {
-                        $("#remote-" + sv.player1Play).show();
-                    }
-    
-                    if (sv.player1Play == sv.player2Play) {
-                        self.setGameMessage(`It is a TIE!`);
-                        // go to a new game - no update needed?
-                    }
-                    else { // someone won.  who?
-                        let didPlayer1Win = false;
-                        if (sv.player1Play == "rock" && sv.player2Play == "scissors" ||
-                            sv.player1Play == "paper" && sv.player2Play == "rock" ||
-                            sv.player1Play == "scissors" && sv.player2Play == "paper") {
-                            didPlayer1Win = true;
-                        }
-    
-                        if (self.amIPlayer1 && didPlayer1Win || !self.amIPlayer1 && !didPlayer1Win) {
-                            self.setGameMessage(`You WIN!`);
-                        }
-                        else {
-                            self.setGameMessage(`You LOSE!`);
-                        }
-    
-    
-    
-                    }
-                }
-            });
-        }, 250);
-    };*/
+
 
     let game = new RPSGame();
     game.state1GetPlayerName();
