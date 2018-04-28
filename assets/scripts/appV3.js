@@ -46,6 +46,13 @@ $(document).ready(function () {
 
         this.playerPath = "players";
         this.chatPath = "chat"
+
+        this.step5Timeout = null;
+        this.step3Timeout = null;
+        this.step4_1Timeout = null;
+        this.step4_2Timeout = null;
+        this.step4_3Timeout = null;
+        this.step4_4Timeout = null;
     }
 
     // call this method when we have an opponent to listen to messages from
@@ -84,7 +91,6 @@ $(document).ready(function () {
             });
     };
     RPSGame.prototype.stopListeningForRemotePlayerWinsLosses = function () {
-        debugger
         database.ref(this.playerPath).child(this.opponentKey).child("losses").off();
         database.ref(this.playerPath).child(this.opponentKey).child("wins").off();
         database.ref(this.playerPath).child(this.opponentKey).child("playMade").off();
@@ -166,6 +172,13 @@ $(document).ready(function () {
         this.listenForRemotePlayerWinsLosses();
         this.chatForm.show();
         this.startListeningForOpponentLeaving();
+        // if we were waiting for the opponent to make a move when they
+        // quit, we get more than one click handler and that leads to a
+        // very difficult bug to find.
+        // subsequent attached players will cause more and more click handlers 
+        // to be orphaned and will cause multiple events that fire.. messing up the score
+        // SO I AM DOUBLE CHECKING THIS ISN'T STILL LISTENING
+        this.localPlayerToolsElements.off();
     };
     RPSGame.prototype.removeOpponent = function (key, name) {
         this.remotePlayerNameElement.text("Player 2");
@@ -175,6 +188,13 @@ $(document).ready(function () {
         this.stopListeningForOpponentLeaving();
         this.opponentKey = "";
         this.opponentName = "";
+        // if we were waiting for the opponent to make a move when they
+        // quit, we get more than one click handler and that leads to a
+        // very difficult bug to find.
+        // subsequent attached players will cause more and more click handlers 
+        // to be orphaned and will cause multiple events that fire.. messing up the score
+        this.clearTimeOuts();
+        this.localPlayerToolsElements.off();
         database.ref(this.playerPath).child(this.playerKey).update({
             opponentKey: "",
             opponentName: ""
@@ -183,6 +203,7 @@ $(document).ready(function () {
 
     // create an even handler that listens for form submittal to get player name & creates object
     RPSGame.prototype.state1GetPlayerName = function () {
+        console.log("entering state 1");
         this.setGameMessage("Please enter your name.");
 
         let self = this;
@@ -252,6 +273,7 @@ $(document).ready(function () {
 
     // you only go to this state if you are the "first" to arrive and need to wait for an opponent
     RPSGame.prototype.goToState2WaitForOpponent = function () {
+        console.log("entering state 2");
         this.setGameMessage("Waiting for an opponent...");
         let self = this;
         database.ref(this.playerPath).child(this.playerKey).on("value",
@@ -269,10 +291,11 @@ $(document).ready(function () {
 
     // print the opponent to the screen
     RPSGame.prototype.goToState3RevealOpponent = function () {
+        console.log("entering state 3");
         this.setGameMessage("Your opponent is " + this.opponentName + ".");
         // wait a second and then tell them to make a move
         let self = this;
-        setTimeout(function () {
+        this.step3Timeout = setTimeout(function () {
             self.goToState4MakeAMove();
         }, 2000);
     };
@@ -307,29 +330,40 @@ $(document).ready(function () {
         $("#remote-" + play).show();
     };
 
+    RPSGame.prototype.clearTimeOuts = function () {
+        clearTimeout(this.step5Timeout);
+        clearTimeout(this.step3Timeout);
+        clearTimeout(this.step4_1Timeout);
+        clearTimeout(this.step4_2Timeout);
+        clearTimeout(this.step4_3Timeout);
+        clearTimeout(this.step4_4Timeout);
+    };
+
     // give a count down and listen for player's choice
     RPSGame.prototype.goToState4MakeAMove = function () {
-        this.setGameMessage("Get ready to choose!");
+        console.log("entering state 4");
+        //this.setGameMessage("Get Ready!");
         this.resetPlayMade();
         this.resetRemoteTools();
 
         let self = this;
         let timeToWait = 1000;
-        setTimeout(function () {
+        self.step4_1Timeout = setTimeout(function () {
             self.setGameMessage("ROCK!");
-            setTimeout(function () {
+            self.step4_2Timeout = setTimeout(function () {
                 self.setGameMessage("PAPER!");
-                setTimeout(function () {
+                self.step4_3Timeout = setTimeout(function () {
                     self.setGameMessage("SCISSORS!");
-                    setTimeout(function () {
+                    self.step4_4Timeout = setTimeout(function () {
                         self.setGameMessage("Shoot!");
                         self.clickablePlayMade();
+
                         self.localPlayerToolsElements.on("click", function () {
                             self.localPlayerToolsElements.off()
                             self.setPlayMade($(this).attr("id"));
-
                             self.goToState5WaitForRemotePlayer();
                         });
+
                     }, timeToWait);
                 }, timeToWait);
             }, timeToWait);
@@ -352,6 +386,7 @@ $(document).ready(function () {
 
     // we have made our play, now we wait and listen for whatever the opponent does
     RPSGame.prototype.goToState5WaitForRemotePlayer = function () {
+        console.log("entering state 5");
         this.setGameMessage("Waiting for opponent...");
 
         let self = this;
@@ -359,7 +394,7 @@ $(document).ready(function () {
             function (snapshot) {
                 let remotePlay = snapshot.val();
 
-                if (remotePlay != "") {
+                if (remotePlay) {
                     database.ref(self.playerPath).child(self.opponentKey).child("playMade").off();
                     // acknowledge receipt of move by resetting it
                     database.ref(self.playerPath).child(self.opponentKey).update({ playMade: "" });
@@ -380,7 +415,7 @@ $(document).ready(function () {
                         //self.appendEndMatchImage(lossGIFS.randomURL());
                         self.incrementLosses();
                     }
-                    setTimeout(function () {
+                    self.step5Timeout = setTimeout(function () {
                         self.goToState4MakeAMove();
                     }, 2000);
                 }
