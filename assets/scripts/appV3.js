@@ -203,7 +203,6 @@ $(document).ready(function () {
 
     // create an even handler that listens for form submittal to get player name & creates object
     RPSGame.prototype.state1GetPlayerName = function () {
-        console.log("entering state 1");
         this.setGameMessage("Please enter your name.");
 
         let self = this;
@@ -273,7 +272,6 @@ $(document).ready(function () {
 
     // you only go to this state if you are the "first" to arrive and need to wait for an opponent
     RPSGame.prototype.goToState2WaitForOpponent = function () {
-        console.log("entering state 2");
         this.setGameMessage("Waiting for an opponent...");
         let self = this;
         database.ref(this.playerPath).child(this.playerKey).on("value",
@@ -291,7 +289,6 @@ $(document).ready(function () {
 
     // print the opponent to the screen
     RPSGame.prototype.goToState3RevealOpponent = function () {
-        console.log("entering state 3");
         this.setGameMessage("Your opponent is " + this.opponentName + ".");
         // wait a second and then tell them to make a move
         let self = this;
@@ -341,8 +338,7 @@ $(document).ready(function () {
 
     // give a count down and listen for player's choice
     RPSGame.prototype.goToState4MakeAMove = function () {
-        console.log("entering state 4");
-        //this.setGameMessage("Get Ready!");
+        this.setGameMessage("Get Ready!");
         this.resetPlayMade();
         this.resetRemoteTools();
 
@@ -386,8 +382,7 @@ $(document).ready(function () {
 
     // we have made our play, now we wait and listen for whatever the opponent does
     RPSGame.prototype.goToState5WaitForRemotePlayer = function () {
-        console.log("entering state 5");
-        this.setGameMessage("Waiting for opponent...");
+        this.setGameMessage("Opponent's move is...");
 
         let self = this;
         database.ref(this.playerPath).child(this.opponentKey).child("playMade").on('value',

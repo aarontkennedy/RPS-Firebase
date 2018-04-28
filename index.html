@@ -12,7 +12,7 @@
     <!--<script src="https://cdn.firebase.com/libs/firebaseui/2.5.1/firebaseui.js"></script>
     <link type="text/css" rel="stylesheet" href="https://cdn.firebase.com/libs/firebaseui/2.5.1/firebaseui.css" />
     -->
-
+    <link href="https://fonts.googleapis.com/css?family=Do+Hyeon" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/style.css">
 
 </head>
@@ -26,7 +26,7 @@
     <section class="container">
         <div class="row">
             <div class="col-12 col-md-4 player">
-                <h3 id="localPlayerName"></h3>
+                <h3 id="localPlayerName" class="playerName"></h3>
                 <form id="nameSelection">
                     <label for="localPlayerNameInput">Name</label>
                     <button type="submit" class="btn btn-primary">Play!</button>
@@ -48,7 +48,7 @@
                 <h3 id="gameMessages"></h3>
             </div>
             <div class="col-12 col-md-4 player">
-                <h3 id="remotePlayerName">Player 2</h3>
+                <h3 id="remotePlayerName" class="playerName">Player 2</h3>
                 <div class="remotePlayerTools ">
                     <img id="remote-rock" src="assets/images/rock.jpg" alt="rock" class="tool">
                     <img id="remote-paper" src="assets/images/paper.jpg" alt="paper" class="tool">
