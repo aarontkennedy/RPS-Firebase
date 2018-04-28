@@ -25,6 +25,7 @@ $(document).ready(function () {
 
         this.statusElement = $("#gameMessages");
         this.localPlayerToolsElements = $(".localPlayerTools img");
+        this.remotePlayerToolsElements = $(".remotePlayerTools img");
         this.localPlayerWinsElement = $("#localPlayerWins");
         this.localPlayerWinsElement = $("#localPlayerLosses");
         this.localPlayerWinsElement = $("#remotePlayerWins");
@@ -83,8 +84,26 @@ $(document).ready(function () {
             });
     };
     RPSGame.prototype.stopListeningForRemotePlayerWinsLosses = function () {
+        debugger
         database.ref(this.playerPath).child(this.opponentKey).child("losses").off();
         database.ref(this.playerPath).child(this.opponentKey).child("wins").off();
+        database.ref(this.playerPath).child(this.opponentKey).child("playMade").off();
+    };
+
+
+    RPSGame.prototype.startListeningForOpponentLeaving = function () {
+        let self = this;
+        database.ref(this.playerPath).child(this.opponentKey).on("value",
+            function (snapshot) {
+                if (snapshot.val() == null) { // opponent player is deleted
+                    self.removeOpponent();
+                    self.goToState2WaitForOpponent();
+                }
+            });
+    };
+
+    RPSGame.prototype.stopListeningForOpponentLeaving = function () {
+        database.ref(this.playerPath).child(this.opponentKey).off();
     };
 
 
@@ -132,10 +151,7 @@ $(document).ready(function () {
     RPSGame.prototype.listenForUnloadCleanUp = function () {
         let self = this;
         $(window).on("unload", function () {
-            debugger
-            console.log("unload");
             database.ref(self.playerPath).child(self.playerKey).remove();
-
             return "Handler for .unload() called.";
         });
     };
@@ -149,18 +165,20 @@ $(document).ready(function () {
         this.listenForRemoteChatMessage();
         this.listenForRemotePlayerWinsLosses();
         this.chatForm.show();
+        this.startListeningForOpponentLeaving();
     };
     RPSGame.prototype.removeOpponent = function (key, name) {
-        this.opponentKey = "";
-        this.opponentName = "";
-        database.ref(self.playerPath).child(self.playerKey).update({
-            opponentKey: "",
-            opponentName: ""
-        });
         this.remotePlayerNameElement.text("Player 2");
         this.stopListeningForRemoteChat();
         this.stopListeningForRemotePlayerWinsLosses();
         this.chatForm.hide();
+        this.stopListeningForOpponentLeaving();
+        this.opponentKey = "";
+        this.opponentName = "";
+        database.ref(this.playerPath).child(this.playerKey).update({
+            opponentKey: "",
+            opponentName: ""
+        });
     };
 
     // create an even handler that listens for form submittal to get player name & creates object
@@ -235,18 +253,18 @@ $(document).ready(function () {
     // you only go to this state if you are the "first" to arrive and need to wait for an opponent
     RPSGame.prototype.goToState2WaitForOpponent = function () {
         this.setGameMessage("Waiting for an opponent...");
-
         let self = this;
-        database.ref(this.playerPath).child(this.playerKey).on("value", function (snapshot) {
-            let sv = snapshot.val();
-            if (self.opponentKey != "" && sv.opponentKey != "") { // we have an opponent
-                // stop listening to ourselves, we will listen to the opponent
-                database.ref(self.playerPath).child(self.playerKey).off();
-                // update game session with this local player's name so remote gets it, set up listeners
-                self.setOpponent(sv.opponentKey, sv.opponentName);
-                self.goToState3RevealOpponent();
-            }
-        });
+        database.ref(this.playerPath).child(this.playerKey).on("value",
+            function (snapshot) {
+                let sv = snapshot.val();
+                if (sv.opponentKey != "") { // we have an opponent
+                    // stop listening to ourselves, we will listen to the opponent
+                    database.ref(self.playerPath).child(self.playerKey).off();
+                    // update game session with this local player's name so remote gets it, set up listeners
+                    self.setOpponent(sv.opponentKey, sv.opponentName);
+                    self.goToState3RevealOpponent();
+                }
+            });
     };
 
     // print the opponent to the screen
@@ -281,10 +299,19 @@ $(document).ready(function () {
         database.ref("players").child(this.playerKey).update({ playMade: this.playMade });
     };
 
+    RPSGame.prototype.resetRemoteTools = function () {
+        this.remotePlayerToolsElements.show();
+    };
+    RPSGame.prototype.setRemoteTools = function (play) {
+        this.remotePlayerToolsElements.hide();
+        $("#remote-" + play).show();
+    };
+
     // give a count down and listen for player's choice
     RPSGame.prototype.goToState4MakeAMove = function () {
         this.setGameMessage("Get ready to choose!");
         this.resetPlayMade();
+        this.resetRemoteTools();
 
         let self = this;
         let timeToWait = 1000;
@@ -336,6 +363,7 @@ $(document).ready(function () {
                     database.ref(self.playerPath).child(self.opponentKey).child("playMade").off();
                     // acknowledge receipt of move by resetting it
                     database.ref(self.playerPath).child(self.opponentKey).update({ playMade: "" });
+                    self.setRemoteTools(remotePlay);
                     if (self.playMade == remotePlay) {
                         self.setGameMessage(`${self.opponentName} played ${remotePlay}, TIE!`);
                         //self.appendEndMatchImage(tieGIFS.randomURL());
