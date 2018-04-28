@@ -2,18 +2,19 @@ $(document).ready(function () {
 
     // Initialize Firebase
     var config = {
-        apiKey: "AIzaSyCe8LHgpvXS4W04GpBO8kCCFBSQCgATicM",
-        authDomain: "rockpaperscissors-22e12.firebaseapp.com",
-        databaseURL: "https://rockpaperscissors-22e12.firebaseio.com",
-        projectId: "rockpaperscissors-22e12",
-        storageBucket: "rockpaperscissors-22e12.appspot.com",
-        messagingSenderId: "811340232539"
+        apiKey: "AIzaSyBhlawP2CJCdBGTT9v3AFJXSd1WuDRuFkE",
+        authDomain: "mysandbox-d3105.firebaseapp.com",
+        databaseURL: "https://mysandbox-d3105.firebaseio.com",
+        projectId: "mysandbox-d3105",
+        storageBucket: "mysandbox-d3105.appspot.com",
+        messagingSenderId: "701778948919"
     };
     firebase.initializeApp(config);
 
     // Create a variable to reference the database.
     let database = firebase.database();
 
+    // object that runs the whole game
     function RPSGame() {
         this.playerName = null;
         this.playerKey = null;
@@ -44,9 +45,13 @@ $(document).ready(function () {
         this.chatForm = $("#chatForm");
         this.chatForm.hide();
 
-        this.playerPath = "players";
-        this.chatPath = "chat"
+        // firebase database paths
+        this.playerPath = "firebaseRPS/players";
+        this.chatPath = "firebaseRPS/chat"
 
+        // have to clear all timeouts when an opponent leaves us otherwise
+        // we end up in a bad state with all sorts of things running and 
+        // then there is all sorts of race conditions
         this.step5Timeout = null;
         this.step3Timeout = null;
         this.step4_1Timeout = null;
@@ -232,7 +237,7 @@ $(document).ready(function () {
                         // claim the first availableGameSession
                         if (sv[key].opponentKey == "") {
                             // update the other user so they know they have an opponent
-                            database.ref("players").child(key).update({
+                            database.ref(self.playerPath).child(key).update({
                                 opponentKey: self.playerKey,
                                 opponentName: self.playerName
                             });
@@ -316,7 +321,7 @@ $(document).ready(function () {
         this.localPlayerToolsElements.hide();
         this.localPlayerToolsElements.removeClass("clickable");
         $("#" + this.playMade).show();
-        database.ref("players").child(this.playerKey).update({ playMade: this.playMade });
+        database.ref(this.playerPath).child(this.playerKey).update({ playMade: this.playMade });
     };
 
     RPSGame.prototype.resetRemoteTools = function () {
