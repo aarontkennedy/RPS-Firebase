@@ -14,7 +14,7 @@ footer {
 }
 
 .tool {
-    width: 60px;
+    width: 75px;
 }
 
 .clickable {
@@ -34,20 +34,31 @@ h1 {
    font-size: 500%;
 }
 
+h1, h2, h3, h4, h5, h6 {
+   margin: .25em;
+   text-align:center;
+}
+
+@media only screen and (max-width: 1199px)  {
+    .tool {
+        width: 60px;
+    }
+}
 @media only screen and (max-width: 767px)  {
     h1 {
-        font-size: 300%;
+        font-size: 325%;
+    }
+    h2 {
+        font-size: 200%;
     }
 }
 @media only screen and (max-width: 480px)  {
     h1 {
         font-size: 200%;
     }
-}
-
-h1, h2, h3, h4, h5, h6 {
-   margin: .25em;
-   text-align:center;
+    h2 {
+        font-size: 150%;
+    }
 }
 
 form {
@@ -102,11 +113,11 @@ footer {
     color: black;
     margin: .1em 0 .1em 0;
 }
-
+/*
 .resultImage {
     max-width:100%;
 }
-
+*/
 .playerName {
     overflow: hidden;
 }
