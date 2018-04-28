@@ -86,3 +86,7 @@ footer {
     color: black;
     margin: .1em 0 .1em 0;
 }
+
+.resultImage {
+    max-width:100%;
+}

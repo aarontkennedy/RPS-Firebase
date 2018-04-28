@@ -55,7 +55,10 @@ $(document).ready(function () {
                 // once read, set the message to empty string
                 if (message) {
                     database.ref(self.playerPath).child(self.opponentKey).update({ messageToSend: "" });
-                    self.chatElement.append(`<p class="remoteChatMessage">${message}</p>`);
+
+                    let pTag = $(`<p class="remoteChatMessage">${message}</p>`);
+                    self.chatElement.append(pTag);
+                    pTag[0].scrollIntoView(false);
                 }
             });
     };
@@ -95,7 +98,9 @@ $(document).ready(function () {
             let message = self.chatInput.val().trim();
             self.chatInput.val("");  // get the message and reset to empty string
             if (message) {
-                self.chatElement.append(`<p class="localChatMessage">${message}</p>`);
+                let pTag = $(`<p class="localChatMessage">${message}</p>`);
+                self.chatElement.append(pTag);
+                pTag[0].scrollIntoView(false);
                 // send our message to our object 
                 database.ref(self.playerPath).child(self.playerKey).update({ messageToSend: message });
             }
@@ -109,6 +114,15 @@ $(document).ready(function () {
     RPSGame.prototype.setGameMessage = function (message) {
         this.statusElement.text(message);
     };
+
+    /*
+    // show an image at the end of each match
+    RPSGame.prototype.appendEndMatchImage = function (url) {
+        this.statusElement.append(`
+            <img src="${url}" class="resultImage"></img>
+        `);
+    };
+    */
 
     // call this when we get an opponent and we can set some variables and 
     // create some listeners for chat messages and wins/losses
@@ -296,16 +310,19 @@ $(document).ready(function () {
                     // acknowledge receipt of move by resetting it
                     database.ref(self.playerPath).child(self.opponentKey).update({ playMade: "" });
                     if (self.playMade == remotePlay) {
-                        self.setGameMessage("Opponent played " + remotePlay + ". TIE!");
+                        self.setGameMessage(`${self.opponentName} played ${remotePlay}, TIE!`);
+                        //self.appendEndMatchImage(tieGIFS.randomURL());
                     }
                     else if (self.playMade == "rock" && remotePlay == "scissors" ||
                         self.playMade == "paper" && remotePlay == "rock" ||
                         self.playMade == "scissors" && remotePlay == "paper") {
-                        self.setGameMessage("Opponent played " + remotePlay + ". You win!");
+                        self.setGameMessage(`${self.opponentName} played ${remotePlay}. You WIN!`);
+                        //self.appendEndMatchImage(winGIFS.randomURL());
                         self.incrementWins();
                     }
                     else {
-                        self.setGameMessage("Opponent played " + remotePlay + ". You lose!");
+                        self.setGameMessage(`${self.opponentName} played ${remotePlay}. You LOSE!`);
+                        //self.appendEndMatchImage(lossGIFS.randomURL());
                         self.incrementLosses();
                     }
                     setTimeout(function () {
@@ -317,7 +334,7 @@ $(document).ready(function () {
 
     RPSGame.prototype.listenForUnloadCleanUp = function () {
         $(window).bind('unload', function(){ 
-            alert();
+            alert("we need to clean up");
             return '';
         });
     };
