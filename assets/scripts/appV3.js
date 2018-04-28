@@ -40,6 +40,8 @@ $(document).ready(function () {
         this.playerNameElement = $("#localPlayerName");
         this.localPlayerLossesElement = $("#localPlayerLosses");
         this.localPlayerWinsElement = $("#localPlayerWins");
+        this.chatForm = $("#chatForm");
+        this.chatForm.hide();
 
         this.playerPath = "players";
         this.chatPath = "chat"
@@ -124,6 +126,20 @@ $(document).ready(function () {
     };
     */
 
+
+    // if the user closes the window/tab we need to clean up and 
+    // delete ourselves from the firebase database
+    RPSGame.prototype.listenForUnloadCleanUp = function () {
+        let self = this;
+        $(window).on("unload", function () {
+            debugger
+            console.log("unload");
+            database.ref(self.playerPath).child(self.playerKey).remove();
+
+            return "Handler for .unload() called.";
+        });
+    };
+
     // call this when we get an opponent and we can set some variables and 
     // create some listeners for chat messages and wins/losses
     RPSGame.prototype.setOpponent = function (key, name) {
@@ -132,6 +148,7 @@ $(document).ready(function () {
         this.remotePlayerNameElement.text(this.opponentName);
         this.listenForRemoteChatMessage();
         this.listenForRemotePlayerWinsLosses();
+        this.chatForm.show();
     };
     RPSGame.prototype.removeOpponent = function (key, name) {
         this.opponentKey = "";
@@ -143,6 +160,7 @@ $(document).ready(function () {
         this.remotePlayerNameElement.text("Player 2");
         this.stopListeningForRemoteChat();
         this.stopListeningForRemotePlayerWinsLosses();
+        this.chatForm.hide();
     };
 
     // create an even handler that listens for form submittal to get player name & creates object
@@ -197,6 +215,10 @@ $(document).ready(function () {
                         messageToSend: ""
                     });
 
+                    // once our object has been created, we need to listen for closure/unload
+                    // and delete ourselves from firebase and notify opponent we are gone
+                    self.listenForUnloadCleanUp();
+
                     self.setUpChatInputListener();
 
                     if (self.opponentKey) {
@@ -241,6 +263,11 @@ $(document).ready(function () {
     RPSGame.prototype.resetPlayMade = function () {
         this.playMade = "";
         this.localPlayerToolsElements.show();
+    };
+
+    // this will set up the RPS clickable images
+    RPSGame.prototype.clickablePlayMade = function () {
+        this.resetPlayMade();
         this.localPlayerToolsElements.addClass("clickable");
     };
 
@@ -257,8 +284,8 @@ $(document).ready(function () {
     // give a count down and listen for player's choice
     RPSGame.prototype.goToState4MakeAMove = function () {
         this.setGameMessage("Get ready to choose!");
-
         this.resetPlayMade();
+
         let self = this;
         let timeToWait = 1000;
         setTimeout(function () {
@@ -269,7 +296,7 @@ $(document).ready(function () {
                     self.setGameMessage("SCISSORS!");
                     setTimeout(function () {
                         self.setGameMessage("Shoot!");
-
+                        self.clickablePlayMade();
                         self.localPlayerToolsElements.on("click", function () {
                             self.localPlayerToolsElements.off()
                             self.setPlayMade($(this).attr("id"));
@@ -304,7 +331,7 @@ $(document).ready(function () {
         database.ref(this.playerPath).child(this.opponentKey).child("playMade").on('value',
             function (snapshot) {
                 let remotePlay = snapshot.val();
-    
+
                 if (remotePlay != "") {
                     database.ref(self.playerPath).child(self.opponentKey).child("playMade").off();
                     // acknowledge receipt of move by resetting it
@@ -332,12 +359,6 @@ $(document).ready(function () {
             });
     };
 
-    RPSGame.prototype.listenForUnloadCleanUp = function () {
-        $(window).bind('unload', function(){ 
-            alert("we need to clean up");
-            return '';
-        });
-    };
 
 
     let game = new RPSGame();
